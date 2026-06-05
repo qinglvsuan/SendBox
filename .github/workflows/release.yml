@@ -7,19 +7,8 @@ on:
 
 jobs:
   build-windows:
-    name: Build Windows (${{ matrix.arch }})
+    name: Build Windows (x64)
     runs-on: windows-latest
-    strategy:
-      matrix:
-        include:
-          - arch: x64
-            flutter_target: windows-x64
-            rust_target: x86_64-pc-windows-msvc
-            out_dir: build\windows\x64\runner\Release
-          - arch: arm64
-            flutter_target: windows-arm64
-            rust_target: aarch64-pc-windows-msvc
-            out_dir: build\windows\arm64\runner\Release
     steps:
       - uses: actions/checkout@v4
       
@@ -30,8 +19,6 @@ jobs:
           
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
@@ -48,17 +35,17 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
         
-      - name: Build Windows Executable (${{ matrix.arch }})
-        run: flutter build windows --target-platform ${{ matrix.flutter_target }}
+      - name: Build Windows Executable
+        run: flutter build windows
         
-      - name: Compress Windows Release (${{ matrix.arch }})
-        run: Compress-Archive -Path ${{ matrix.out_dir }}\* -DestinationPath SendBox-Windows-${{ matrix.arch }}.zip
+      - name: Compress Windows Release
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath SendBox-Windows-x64.zip
 
-      - name: Archive Windows Release (${{ matrix.arch }})
+      - name: Archive Windows Release
         uses: actions/upload-artifact@v4
         with:
-          name: windows-artifact-${{ matrix.arch }}
-          path: SendBox-Windows-${{ matrix.arch }}.zip
+          name: windows-artifact-x64
+          path: SendBox-Windows-x64.zip
 
   build-android:
     name: Build Android
@@ -121,12 +108,6 @@ jobs:
         with:
           name: windows-artifact-x64
           path: windows-release
-
-      - name: Download Windows arm64 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-artifact-arm64
-          path: windows-release
           
       - name: Download Android Artifacts
         uses: actions/download-artifact@v4
@@ -139,7 +120,6 @@ jobs:
         with:
           files: |
             windows-release/SendBox-Windows-x64.zip
-            windows-release/SendBox-Windows-arm64.zip
             android-release/SendBox-armeabi-v7a.apk
             android-release/SendBox-arm64-v8a.apk
             android-release/SendBox-x86_64.apk
