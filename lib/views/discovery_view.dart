@@ -195,6 +195,8 @@ class _DiscoveryViewState extends State<DiscoveryView> {
           final d = Directory(p.join(externalDir.path, 'Download'));
           if (!await d.exists()) await d.create(recursive: true);
           saveDir = d.path;
+        } else {
+          saveDir = '/storage/emulated/0/Download';
         }
       } else {
         final downloadsDir = await getDownloadsDirectory();
@@ -205,9 +207,9 @@ class _DiscoveryViewState extends State<DiscoveryView> {
     final url = "http://${device.ip}:${device.port}/files/$fileId";
     
     try {
-      await service.downloadRemoteFile(url, filename, saveDir);
+      await service.downloadRemoteFile(url, filename, saveDir!);
       if (mounted) {
-        final fullPath = p.join(saveDir, filename);
+        final fullPath = p.join(saveDir!, filename);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("下载完成: $filename"),
