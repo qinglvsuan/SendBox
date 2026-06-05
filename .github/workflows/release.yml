@@ -28,6 +28,9 @@ jobs:
 
       - name: Generate FRB Code
         run: flutter_rust_bridge_codegen generate
+
+      - name: Apply Launcher Icons
+        run: dart run flutter_launcher_icons
         
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
@@ -74,6 +77,9 @@ jobs:
 
       - name: Generate FRB Code
         run: flutter_rust_bridge_codegen generate
+
+      - name: Apply Launcher Icons
+        run: dart run flutter_launcher_icons
         
       - name: Build APKs
         run: flutter build apk --split-per-abi
