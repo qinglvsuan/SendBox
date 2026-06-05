@@ -190,13 +190,20 @@ class _DiscoveryViewState extends State<DiscoveryView> {
     String? saveDir = prefs.getString('download_path');
     if (saveDir == null) {
       if (Platform.isAndroid) {
-        final externalDir = await getExternalStorageDirectory();
-        if (externalDir != null) {
-          final d = Directory(p.join(externalDir.path, 'Download'));
+        saveDir = '/storage/emulated/0/Download';
+        try {
+          final d = Directory(saveDir);
           if (!await d.exists()) await d.create(recursive: true);
-          saveDir = d.path;
-        } else {
-          saveDir = '/storage/emulated/0/Download';
+          final testFile = File(p.join(saveDir, '.localsender_test'));
+          await testFile.writeAsString('test');
+          await testFile.delete();
+        } catch (e) {
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            final d = Directory(p.join(externalDir.path, 'Download'));
+            if (!await d.exists()) await d.create(recursive: true);
+            saveDir = d.path;
+          }
         }
       } else {
         final downloadsDir = await getDownloadsDirectory();

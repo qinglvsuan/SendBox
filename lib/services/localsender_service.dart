@@ -186,10 +186,18 @@ class LocalSenderService extends ChangeNotifier {
 
       Directory? downloadsDir;
       if (Platform.isAndroid) {
-        final externalDir = await getExternalStorageDirectory();
-        if (externalDir != null) {
-          downloadsDir = Directory(p.join(externalDir.path, 'Download'));
+        downloadsDir = Directory('/storage/emulated/0/Download');
+        try {
           if (!await downloadsDir.exists()) await downloadsDir.create(recursive: true);
+          final testFile = File(p.join(downloadsDir.path, '.localsender_test'));
+          await testFile.writeAsString('test');
+          await testFile.delete();
+        } catch (e) {
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            downloadsDir = Directory(p.join(externalDir.path, 'Download'));
+            if (!await downloadsDir.exists()) await downloadsDir.create(recursive: true);
+          }
         }
       } else {
         downloadsDir = await getDownloadsDirectory();
