@@ -145,7 +145,7 @@ jobs:
 
       - name: Rename APKs
         run: |
-          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk SendBox-armeabi-v7a.apk
+          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk SendBox-armv7.apk
           mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk SendBox-arm64-v8a.apk
           mv build/app/outputs/flutter-apk/app-x86_64-release.apk SendBox-x86_64.apk
 
@@ -180,7 +180,8 @@ jobs:
         with:
           files: |
             windows-release/SendBox-Windows-x64.zip
-            android-release/SendBox-armeabi-v7a.apk
+            android-release/SendBox-armv7.apk
             android-release/SendBox-arm64-v8a.apk
             android-release/SendBox-x86_64.apk
+
 
