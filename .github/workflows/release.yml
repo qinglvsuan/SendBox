@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*' # Trigger on tags starting with 'v', e.g., v1.0.0
+      - 'v*'
 
 jobs:
   build-windows:
@@ -11,11 +11,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true  # Cache Flutter SDK
 
       - name: Set version from tag
         run: |
@@ -23,9 +24,33 @@ jobs:
           $version = $tag.TrimStart('v')
           (Get-Content pubspec.yaml) -replace '^version: .*', "version: $version+1" | Set-Content pubspec.yaml
           Write-Host "Version set to: $version+1"
-          
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            C:\Users\runneradmin\AppData\Local\Pub\Cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Flutter pub get
+        run: flutter pub get
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry & build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> target
+          cache-on-failure: true
+
+      - name: Cache cargo-binstall tools
+        uses: actions/cache@v4
+        with:
+          path: C:\Users\runneradmin\.cargo\bin\flutter_rust_bridge_codegen.exe
+          key: frb-codegen-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
@@ -35,13 +60,13 @@ jobs:
 
       - name: Generate FRB Code
         run: flutter_rust_bridge_codegen generate
-        
+
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
-        
+
       - name: Build Windows Executable
         run: flutter build windows
-        
+
       - name: Compress Windows Release
         run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath SendBox-Windows-x64.zip
 
@@ -56,17 +81,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          
+          cache: 'gradle'  # Cache Gradle dependencies
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true  # Cache Flutter SDK
 
       - name: Set version from tag
         run: |
@@ -74,11 +101,33 @@ jobs:
           VERSION="${TAG#v}"
           sed -i "s/^version: .*/version: ${VERSION}+1/" pubspec.yaml
           echo "Version set to: ${VERSION}+1"
-          
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Flutter pub get
+        run: flutter pub get
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
+      - name: Cache Cargo registry & build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> target
+          cache-on-failure: true
+
+      - name: Cache cargo-binstall tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/flutter_rust_bridge_codegen
+          key: frb-codegen-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
@@ -88,10 +137,10 @@ jobs:
 
       - name: Generate FRB Code
         run: flutter_rust_bridge_codegen generate
-        
+
       - name: Build APKs
         run: flutter build apk --split-per-abi
-        
+
       - name: Rename APKs
         run: |
           mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk SendBox-armeabi-v7a.apk
@@ -116,13 +165,13 @@ jobs:
         with:
           name: windows-artifact-x64
           path: windows-release
-          
+
       - name: Download Android Artifacts
         uses: actions/download-artifact@v4
         with:
           name: android-artifacts
           path: android-release
-          
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
