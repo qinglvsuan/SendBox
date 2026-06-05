@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -188,8 +189,12 @@ class _DiscoveryViewState extends State<DiscoveryView> {
     final prefs = await SharedPreferences.getInstance();
     String? saveDir = prefs.getString('download_path');
     if (saveDir == null) {
-      final downloadsDir = await getDownloadsDirectory();
-      saveDir = downloadsDir?.path ?? (await getApplicationDocumentsDirectory()).path;
+      if (Platform.isAndroid) {
+        saveDir = '/storage/emulated/0/Download';
+      } else {
+        final downloadsDir = await getDownloadsDirectory();
+        saveDir = downloadsDir?.path ?? (await getApplicationDocumentsDirectory()).path;
+      }
     }
     
     final url = "http://${device.ip}:${device.port}/files/$fileId";
@@ -404,8 +409,8 @@ class _DiscoveryViewState extends State<DiscoveryView> {
                     ),
                     trailing: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isSelected ? MinimalTheme.primary : MinimalTheme.surfaceLight,
-                        foregroundColor: Colors.white,
+                        backgroundColor: isSelected ? MinimalTheme.primary : MinimalTheme.primary.withOpacity(0.1),
+                        foregroundColor: isSelected ? Colors.white : MinimalTheme.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
