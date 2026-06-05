@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SendBox 暂存服务</title>
+    <style>
+        :root {
+            --primary: #000000;
+            --secondary: #00F5D4;
+            --background: #F8F9FA;
+            --surface: #FFFFFF;
+            --text-main: #212529;
+            --text-muted: #868E96;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin: 0 0 8px 0;
+            color: var(--primary);
+        }
+
+        .header p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .node-info {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--secondary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--secondary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 245, 212, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 245, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 245, 212, 0); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .icon-file {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .icon-text {
+            background-color: rgba(0, 245, 212, 0.15);
+            color: #00B89F;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px dashed rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            background: var(--surface);
+            border: 2px dashed rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--secondary);
+            background: rgba(0, 245, 212, 0.05);
+        }
+
+        .upload-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            color: #008f7b;
+        }
+
+        .upload-progress {
+            margin-top: 15px;
+            height: 4px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            background: var(--secondary);
+            width: 0%;
+            transition: width 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>SendBox</h1>
+        <p>局域网无缝暂存服务</p>
+    </div>
+
+    <div class="node-info">
+        <div class="status-dot"></div>
+        <div>
+            <div style="font-weight: 600; font-size: 15px;" id="node-name">连接中...</div>
+            <div style="font-size: 13px; color: var(--text-muted);">服务正常运行</div>
+        </div>
+    </div>
+
+    <div class="upload-area" id="drop-zone">
+        <input type="file" id="file-input" multiple style="display: none;">
+        <div style="font-size: 32px; margin-bottom: 10px;">📤</div>
+        <div style="font-weight: 600; margin-bottom: 4px;">发送文件到服务端</div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">点击或拖拽文件到此处</div>
+        <button class="upload-btn" onclick="document.getElementById('file-input').click()">选择文件</button>
+        <div class="upload-progress" id="upload-progress">
+            <div class="upload-progress-bar" id="upload-progress-bar"></div>
+        </div>
+        <div id="upload-status" style="font-size: 12px; color: var(--text-muted); margin-top: 8px; display: none;"></div>
+    </div>
+
+    <div id="grid" class="grid">
+        <!-- JS rendered items will go here -->
+    </div>
+</div>
+
+<script>
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    async function copyToClipboard(id, btnElement) {
+        try {
+            const response = await fetch(`/clipboard/${id}`);
+            const text = await response.text();
+            await navigator.clipboard.writeText(text);
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "已复制!";
+            setTimeout(() => { btnElement.innerText = originalText; }, 2000);
+        } catch (err) {
+            alert('复制失败，可能是因为浏览器不支持或发生错误。');
+        }
+    }
+
+    async function loadInfo() {
+        try {
+            const res = await fetch('/info');
+            const data = await res.json();
+
+            document.getElementById('node-name').innerText = `节点名: ${data.node_name}`;
+
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            if (!data.files || data.files.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1;" class="empty-state">
+                        <div style="font-size: 40px; margin-bottom: 12px;">☁️</div>
+                        <h3 style="margin: 0 0 8px 0; color: var(--primary);">暂无共享项</h3>
+                        <p style="margin: 0;">主机尚未挂载任何文件或文本内容</p>
+                    </div>
+                `;
+                return;
+            }
+
+            data.files.forEach(item => {
+                const isFile = item.item_type === 'File';
+                const iconClass = isFile ? 'icon-file' : 'icon-text';
+                const iconStr = isFile ? '📄' : '📝';
+                const typeStr = isFile ? '文件' : '剪贴板文本';
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="icon-box ${iconClass}">${iconStr}</div>
+                        <div class="item-info">
+                            <h4 class="item-title" title="${item.name}">${item.name}</h4>
+                            <p class="item-meta">${typeStr} • ${formatBytes(item.size)}</p>
+                        </div>
+                    </div>
+                    ${isFile 
+                        ? `<a href="/files/${item.id}" download class="btn">立即下载</a>`
+                        : `<button class="btn btn-secondary" onclick="copyToClipboard('${item.id}', this)">一键复制文本</button>`
+                    }
+                `;
+                grid.appendChild(card);
+            });
+        } catch (e) {
+            document.getElementById('node-name').innerText = "无法连接到服务器";
+            document.querySelector('.status-dot').style.backgroundColor = "red";
+            document.querySelector('.status-dot').style.animation = "none";
+        }
+    }
+
+    // Auto refresh every 5 seconds
+    loadInfo();
+    setInterval(loadInfo, 1000);
+
+    // Upload logic
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const progressBar = document.getElementById('upload-progress');
+    const progressInner = document.getElementById('upload-progress-bar');
+    const statusText = document.getElementById('upload-status');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            uploadFiles(e.dataTransfer.files);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            uploadFiles(e.target.files);
+        }
+    });
+
+    async function uploadFiles(files) {
+        let totalSize = 0;
+        for (let i = 0; i < files.length; i++) {
+            totalSize += files[i].size;
+        }
+        let name = files.length === 1 ? files[0].name : `${files.length} 个文件`;
+
+        progressBar.style.display = 'block';
+        statusText.style.display = 'block';
+        statusText.innerText = '正在等待对方确认...';
+        progressInner.style.width = '0%';
+        progressInner.style.backgroundColor = 'var(--secondary)'; // Reset color
+
+        try {
+            const reqRes = await fetch('/request_upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, size: totalSize })
+            });
+
+            if (!reqRes.ok) {
+                const text = await reqRes.text();
+                let errStr = text;
+                try {
+                    const j = JSON.parse(text);
+                    if (j.error) errStr = j.error;
+                } catch(e) {}
+                throw new Error(errStr || '被拒绝或请求失败');
+            }
+
+            const reqData = await reqRes.json();
+            if (!reqData.token) throw new Error('缺少授权 Token');
+
+            const token = reqData.token;
+            statusText.innerText = '对方已同意，开始上传...';
+
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `/upload?token=${token}`, true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressInner.style.width = percentComplete + '%';
+                    statusText.innerText = `上传中: ${Math.round(percentComplete)}%`;
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    progressInner.style.width = '100%';
+                    statusText.innerText = '上传成功!';
+                    setTimeout(() => {
+                        progressBar.style.display = 'none';
+                        statusText.style.display = 'none';
+                        fileInput.value = '';
+                    }, 2000);
+                } else {
+                    statusText.innerText = '上传失败: ' + xhr.statusText;
+                    progressInner.style.backgroundColor = 'red';
+                }
+            };
+
+            xhr.onerror = function() {
+                statusText.innerText = '上传发生网络错误';
+                progressInner.style.backgroundColor = 'red';
+            };
+
+            xhr.send(formData);
+        } catch (err) {
+            statusText.innerText = '请求失败: ' + err.message;
+            progressInner.style.backgroundColor = 'red';
+        }
+    }
+</script>
+
+</body>
+</html>
