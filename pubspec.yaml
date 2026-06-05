@@ -111,10 +111,8 @@ flutter_launcher_icons:
   adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: "assets/icon.png"
   ios: true
-  windows:
-    generate: true
-    image_path: "assets/icon.png"
-    icon_size: 256
   image_path: "assets/icon.png"
+
+
 
 
