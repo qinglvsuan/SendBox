@@ -16,6 +16,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+
+      - name: Set version from tag
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          (Get-Content pubspec.yaml) -replace '^version: .*', "version: $version+1" | Set-Content pubspec.yaml
+          Write-Host "Version set to: $version+1"
           
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -28,9 +35,6 @@ jobs:
 
       - name: Generate FRB Code
         run: flutter_rust_bridge_codegen generate
-
-      - name: Apply Launcher Icons
-        run: dart run flutter_launcher_icons
         
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
@@ -63,6 +67,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+
+      - name: Set version from tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          sed -i "s/^version: .*/version: ${VERSION}+1/" pubspec.yaml
+          echo "Version set to: ${VERSION}+1"
           
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -77,9 +88,6 @@ jobs:
 
       - name: Generate FRB Code
         run: flutter_rust_bridge_codegen generate
-
-      - name: Apply Launcher Icons
-        run: dart run flutter_launcher_icons
         
       - name: Build APKs
         run: flutter build apk --split-per-abi
