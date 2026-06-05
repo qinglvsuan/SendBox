@@ -190,7 +190,12 @@ class _DiscoveryViewState extends State<DiscoveryView> {
     String? saveDir = prefs.getString('download_path');
     if (saveDir == null) {
       if (Platform.isAndroid) {
-        saveDir = '/storage/emulated/0/Download';
+        final externalDir = await getExternalStorageDirectory();
+        if (externalDir != null) {
+          final d = Directory(p.join(externalDir.path, 'Download'));
+          if (!await d.exists()) await d.create(recursive: true);
+          saveDir = d.path;
+        }
       } else {
         final downloadsDir = await getDownloadsDirectory();
         saveDir = downloadsDir?.path ?? (await getApplicationDocumentsDirectory()).path;
