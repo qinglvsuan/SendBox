@@ -209,10 +209,10 @@ class _DiscoveryViewState extends State<DiscoveryView> {
             backgroundColor: MinimalTheme.secondary,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: "打开",
+              label: "打开目录",
               textColor: MinimalTheme.background,
               onPressed: () {
-                OpenFilex.open(fullPath);
+                OpenFilex.open(saveDir);
               },
             ),
           ),
@@ -556,7 +556,8 @@ class _DiscoveryViewState extends State<DiscoveryView> {
                       
                       final fileUrl = "http://${_selectedDevice!.ip}:${_selectedDevice!.port}/files/$id";
                       final downloadProgress = service.downloadProgress[fileUrl];
-                      final isDownloading = downloadProgress != null;
+                      final isDownloading = downloadProgress != null && downloadProgress < 1.0;
+                      final isDownloaded = downloadProgress == 1.0;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -611,15 +612,26 @@ class _DiscoveryViewState extends State<DiscoveryView> {
                                           alignment: Alignment.center,
                                           child: SpinKitRing(color: MinimalTheme.secondary, size: 20, lineWidth: 2.5),
                                         )
-                                      : IconButton.filledTonal(
-                                          style: IconButton.styleFrom(
-                                            backgroundColor: MinimalTheme.primary.withOpacity(0.15),
-                                            foregroundColor: MinimalTheme.primary,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                          ),
-                                          icon: const Icon(Icons.download_rounded, size: 20),
-                                          onPressed: () => _downloadRemoteFile(_selectedDevice!, id, name, service),
-                                        ))
+                                      : (isDownloaded
+                                          ? Container(
+                                              width: 32,
+                                              height: 32,
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(
+                                                color: MinimalTheme.secondary.withOpacity(0.15),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(Icons.check_rounded, color: MinimalTheme.secondary, size: 20),
+                                            )
+                                          : IconButton.filledTonal(
+                                              style: IconButton.styleFrom(
+                                                backgroundColor: MinimalTheme.primary.withOpacity(0.15),
+                                                foregroundColor: MinimalTheme.primary,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                              ),
+                                              icon: const Icon(Icons.download_rounded, size: 20),
+                                              onPressed: () => _downloadRemoteFile(_selectedDevice!, id, name, service),
+                                            )))
                                   : IconButton.filledTonal(
                                       style: IconButton.styleFrom(
                                         backgroundColor: MinimalTheme.secondary.withOpacity(0.15),
