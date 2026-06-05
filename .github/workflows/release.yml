@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tags starting with 'v', e.g., v1.0.0
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v4
+        with:
+          channel: 'stable'
+          
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install flutter_rust_bridge_codegen
+        run: cargo binstall -y flutter_rust_bridge_codegen
+
+      - name: Generate FRB Code
+        run: flutter_rust_bridge_codegen generate
+        
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+        
+      - name: Build Windows Executable
+        run: flutter build windows
+        
+      - name: Archive Windows Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifact
+          path: build\windows\x64\runner\Release\SendBox.exe
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v4
+        with:
+          channel: 'stable'
+          
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install flutter_rust_bridge_codegen
+        run: cargo binstall -y flutter_rust_bridge_codegen
+
+      - name: Generate FRB Code
+        run: flutter_rust_bridge_codegen generate
+        
+      - name: Build APKs
+        run: flutter build apk --split-per-abi
+        
+      - name: Archive Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: build/app/outputs/flutter-apk/app-*-release.apk
+
+  release:
+    name: Create GitHub Release
+    needs: [build-windows, build-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifact
+          path: windows-release
+          
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-artifacts
+          path: android-release
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows-release/SendBox.exe
+            android-release/app-armeabi-v7a-release.apk
+            android-release/app-arm64-v8a-release.apk
+            android-release/app-x86_64-release.apk
