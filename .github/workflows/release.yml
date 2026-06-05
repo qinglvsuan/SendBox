@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
@@ -185,3 +183,4 @@ jobs:
             android-release/SendBox-armeabi-v7a.apk
             android-release/SendBox-arm64-v8a.apk
             android-release/SendBox-x86_64.apk
+
