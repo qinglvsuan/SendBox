@@ -212,7 +212,7 @@ class _DiscoveryViewState extends State<DiscoveryView> {
               label: "打开目录",
               textColor: MinimalTheme.background,
               onPressed: () {
-                OpenFilex.open(saveDir);
+                OpenFilex.open(saveDir!);
               },
             ),
           ),
